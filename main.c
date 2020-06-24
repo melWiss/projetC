@@ -54,43 +54,37 @@ void AjouterPersonne(char NP[20], Cellule *T)
 
 void AjouterCahier(Dossier *D, char NP[20], char NA[20])
 {
+    D->NbC++;
     if (D->NbC >= MaxC)
     {
         printf("IMPOSSIBLE D'AJOUT: NBC<MAXC\n");
-        return;
+        D->NbC--;
     }
     else
     {
-        strcpy(D->TC[D->NbC].NomA, NA);
-        D->TC[D->NbC].LP = (Cellule *)malloc(sizeof(Cellule));
-        strcpy(D->TC[D->NbC].LP->NomP, NP);
-        D->TC[D->NbC].LP->PP = NULL;
-        D->NbC++;
+        strcpy(D->TC[D->NbC - 1].NomA, NA);
+        D->TC[D->NbC - 1].LP = (Cellule *)malloc(sizeof(Cellule));
+        strcpy(D->TC[D->NbC - 1].LP->NomP, NP);
+        D->TC[D->NbC - 1].LP->PP = NULL;
+        printf("%s EST INSCRIE!\n", NP);
+        printf("%s EST CREE!\n", NA);
     }
 }
 
 void AjouterInscription(Dossier *D, char NP[20], char NA[20])
 {
-    if (D->NbC >= MaxC)
+    if (RechercheActivite(*D, NA) != -1)
     {
-        printf("IMPOSSIBLE D'INSCRIT: NBC>=MAXC\n");
-        return;
+        if (Appartient(NP, D->TC[RechercheActivite(*D, NA)].LP) == NULL)
+        {
+            AjouterPersonne(NP, D->TC[RechercheActivite(*D, NA)].LP);
+        }
     }
     else
     {
-        if (RechercheActivite(*D, NA) != -1)
-        {
-            if (Appartient(NP, D->TC[RechercheActivite(*D, NA)].LP) == NULL)
-            {
-                AjouterPersonne(NP, D->TC[RechercheActivite(*D, NA)].LP);
-                D->NbC++;
-            }
-        }
-        else
-        {
-            AjouterCahier(D, NP, NA);
-        }
+        AjouterCahier(D, NP, NA);
     }
+    printf("%s EST INSCRIE!\n", NP);
 }
 
 void AfficherDossier(Dossier D, char NA[20])
@@ -115,21 +109,40 @@ void SupprimerPersonne(Dossier *D, char NP[20], char NA[20])
                 /* code */
                 Cellule *p = personnes;
                 personnes = personnes->PP;
+                D->TC[RechercheActivite(*D, NA)].LP = personnes;
+                if (personnes == NULL)
+                {
+                    supprimerActivite(D, NA);
+                }
                 free(p);
             }
             else
             {
                 while (personnes->PP != NULL && strcmp(personnes->PP->NomP, NP) != 0)
                     personnes = personnes->PP;
-                if (personnes->PP != NULL)
+                if (strcmp(personnes->PP->NomP, NP) == 0)
                 {
                     Cellule *p = personnes->PP;
-                    personnes->PP = personnes->PP->PP;
-                    D->TC[RechercheActivite(*D, NA)].LP = personnes;
+                    personnes->PP = p->PP;
                     free(p);
                 }
             }
+            printf("%s A ETE SUPRIMÉ!\n", NP);
         }
+    }
+}
+
+void supprimerActivite(Dossier *D, char NA[20])
+{
+    int positionAct = RechercheActivite(*D, NA);
+    if (positionAct != -1)
+    {
+        for (int i = positionAct + 1; i < D->NbC; i++)
+        {
+            D->TC[positionAct] = D->TC[i];
+        }
+        printf("%s A ETE SUPRIMÉ!\n", NA);
+        D->NbC--;
     }
 }
 
@@ -212,18 +225,18 @@ void AffichageActivites(Dossier *D)
 
 void clearScreen()
 {
-    #ifdef __linux__
-        system("clear");
-    #else
-        system("cls");
-    #endif
+#ifdef __linux__
+    system("clear");
+#else
+    system("cls");
+#endif
 }
 
 void main()
 {
     Dossier D;
+    D.NbC = 0;
     int choix = 0;
-    int D_IS_EMPTY = 1;
     clearScreen();
     while (choix != 6)
     {
@@ -235,49 +248,40 @@ void main()
         case 1:
             RemplissageAutomatique(&D);
             printf("REMPLISSAGE AUTO EST TERMINEE!\n");
-            D_IS_EMPTY = 0;
             break;
         case 2:
             /* code */
-            if (D_IS_EMPTY != 1)
             {
                 char personne[20], activite[30];
-                printf("\nDonner le prenom de personne: ");
+                printf("Donner le prenom de personne: ");
                 scanf("%s", &personne);
-                printf("\nDonner le nom de l'activite: ");
+                printf("Donner le nom de l'activite: ");
                 scanf("%s", &activite);
                 AjouterInscription(&D, personne, activite);
-                printf("\n%s EST INSCRIE!\n", personne);
             }
             break;
         case 3:
             /* code */
-            if (D_IS_EMPTY != 1)
-            {
-                AffichageActivites(&D);
-            }
+            AffichageActivites(&D);
             break;
         case 4:
             /* code */
-            if (D_IS_EMPTY != 1)
             {
                 char activite[30];
-                printf("\nDonner le nom de l'activite: ");
+                printf("Donner le nom de l'activite: ");
                 scanf("%s", &activite);
                 AfficherDossier(D, activite);
             }
             break;
         case 5:
             /* code */
-            if (D_IS_EMPTY != 1)
             {
                 char personne[20], activite[30];
-                printf("\nDonner le prenom de personne: ");
+                printf("Donner le prenom de personne: ");
                 scanf("%s", &personne);
-                printf("\nDonner le nom de l'activite: ");
+                printf("Donner le nom de l'activite: ");
                 scanf("%s", &activite);
                 SupprimerPersonne(&D, personne, activite);
-                printf("\n%s A ETE SUPRIMÉ!\n", personne);
             }
             break;
         default:
